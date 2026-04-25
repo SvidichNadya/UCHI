@@ -1,70 +1,75 @@
 import 'dart:js_interop';
+import 'package:flutter/material.dart'; // <- Используем material.dart вместо dart:ui
+import 'package:flame/components.dart';
 import 'package:flame/game.dart';
-import 'package:flame/events.dart';
 import 'package:web/web.dart' as web;
-import '../../phygital_core/ml_interop/mediapipe_task.dart';
-import '../../phygital_core/kinematics/avatar_controller.dart';
-import '../../phygital_core/speech/speech_handler.dart';
+// Ваши импорты ML и аватара остаются здесь
 
-class EtherWorld extends FlameGame with TapCallbacks {
-  late AvatarController avatar;
-  late MediaPipePoseDetector poseDetector;
-  late SpeechHandler speechHandler;
+class EtherWorld extends FlameGame {
+  // late AvatarController avatar;
   late web.HTMLVideoElement video;
   String currentTask = 'idle';
 
   @override
   Future<void> onLoad() async {
-    // ----- Камера -----
-    video = web.document.createElement('video') as web.HTMLVideoElement;
-    video.autoplay = true;
-    video.playsInline = true;
-    video.width = 640;
-    video.height = 480;
+    super.onLoad();
+    
+    // 1. Отрисовка фона (Мистический лес)
+    add(RectangleComponent(
+      size: size,
+      paint: Paint()..color = const Color(0xFF1E1E2C),
+    ));
 
-    final constraints = web.MediaStreamConstraints()
-      ..video = true.jsify()!;            // JSAny? -> JSAny через !
-    final promise = web.window.navigator.mediaDevices.getUserMedia(constraints);
-    final stream = await promise.toDart;  // MediaStream
-    video.srcObject = stream;
-    await video.play().toDart;
+    // 2. Добавление NPC: Каменный Голем
+    add(CircleComponent(
+      radius: 80,
+      position: Vector2(size.x / 2, size.y / 2.5),
+      anchor: Anchor.center,
+      paint: Paint()..color = const Color(0xFF5A636A),
+    ));
 
-    // ----- MediaPipe детектор -----
-    poseDetector = await MediaPipePoseDetector.create();
+    // 3. Добавление текста над Големом
+    add(TextComponent(
+      text: 'Я Каменный Голем! Как пройдем?',
+      position: Vector2(size.x / 2, size.y / 2.5 - 110),
+      anchor: Anchor.center,
+      textRenderer: TextPaint(
+        // Теперь Flutter TextStyle будет распознан корректно
+        style: const TextStyle(fontSize: 32, color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold),
+      ),
+    ));
 
-    // ----- Аватар -----
-    avatar = AvatarController();
-    add(avatar);
+    _initializeCamera();
+  }
 
-    // ----- Голос -----
-    speechHandler = SpeechHandler(
-      onCommand: (command) => handleVoiceCommand(command),
-    );
-    speechHandler.start();
+  Future<void> _initializeCamera() async {
+    try {
+      video = web.document.createElement('video') as web.HTMLVideoElement;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.width = 640;
+      video.height = 480;
 
-    // ----- Цикл детекции -----
-    Stream.periodic(const Duration(milliseconds: 100)).listen((_) {
-      final landmarks = poseDetector.detect(video);
-      if (landmarks != null) {
-        avatar.updatePose(landmarks);
-      }
-    });
+      final constraints = web.MediaStreamConstraints()..video = true.jsify()!;
+      final promise = web.window.navigator.mediaDevices.getUserMedia(constraints);
+      final stream = await promise.toDart;
+      video.srcObject = stream;
+      await video.play().toDart;
+      
+      // Здесь инициализируется ваш MediaPipe
+    } catch (e) {
+      print('Ошибка доступа к камере: $e');
+    }
   }
 
   void handleVoiceCommand(String command) {
     if (command.contains('читать')) {
-      // startReadingChallenge();
+      print('Инициирован сценарий Чтения');
+      // Смена состояния: запускаем мини-игру с рунами
     } else if (command.contains('спорт')) {
-      // startExercise('squats');
-    } else if (command.contains('лепить')) {
-      // startCraft();
+      print('Инициирован сценарий Спорта');
+      // Смена состояния: падающие камни
     }
-  }
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    avatar.updateAnimation(dt);
   }
 
   @override
@@ -76,7 +81,6 @@ class EtherWorld extends FlameGame with TapCallbacks {
         tracks[i].stop();
       }
     }
-    video.srcObject = null;
     super.onRemove();
   }
 }

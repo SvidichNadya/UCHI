@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flame/flame.dart';
-import 'features/onboarding/parent_gate.dart';
+import 'features/onboarding/main_menu.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Flame.device.fullScreen();
+  await Flame.device.setLandscape(); // Игра лучше выглядит в ландшафтном режиме
   runApp(const EtherApp());
 }
 
@@ -15,14 +16,12 @@ class EtherApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Хранители Эфира',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         fontFamily: 'Roboto',
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-        ),
       ),
-      home: const ParentGateScreen(),
+      home: const MainMenuScreen(),
     );
   }
 }
